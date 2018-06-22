@@ -23,6 +23,7 @@ function payOut(shipmentReceived) {
     var payOut = contract.unitPrice * shipment.unitCount;
     var shipmentAmount = payOut;
     var penalty = 0;
+    var NS = 'org.coyote.playground.blockchain.demo';
     //console.log('Received at: ' + shipmentReceived.timestamp);
     //console.log('Contract arrivalDateTime: ' + contract.arrivalDateTime);
 
@@ -66,7 +67,6 @@ function payOut(shipmentReceived) {
             }
         }
     }
-
     //console.log('Payout: ' + payOut);
     if (payOut > 0) {
         contract.customer.accountBalance -= payOut;
@@ -83,16 +83,17 @@ function payOut(shipmentReceived) {
     emit(shipmentArrived);
 
     return getParticipantRegistry('org.coyote.playground.blockchain.demo.Customer')
-        .then(function (customerRegistry) {
+        .then(function (customerRegistry) {            
             // update the customer's balance
+            
             return customerRegistry.update(contract.customer);
         })
-        .then(function () {
+        .then(function () {        
             return getParticipantRegistry('org.coyote.playground.blockchain.demo.Broker');
         })
-        .then(function (coyoteRegistry) {
-            // update the coyote's balance
-            return coyoteRegistry.update(contract.broker);
+        .then(function (brokerRegistry) {
+            // update the broker's balance
+            return brokerRegistry.update(contract.broker);
         })
         .then(function () {
             return getParticipantRegistry('org.coyote.playground.blockchain.demo.Carrier');
@@ -191,16 +192,16 @@ function gpsReading(gpsReading) {
  */
 function shipmentAccepted(shipmentAccepted) {
     var shipment = shipmentAccepted.shipment;
+    var NS = 'org.coyote.playground.blockchain.demo';
     if (shipment.status == "CREATED") {
         shipment.status = 'ACCEPTED';        
-        var NS = 'org.coyote.playground.blockchain.demo';
-        return getAssetRegistry(NS + '.Shipment')
-        .then(function (shipmentRegistry) {
-            // add the accepted state to the shipment
-            return shipmentRegistry.update(shipment);
-        });
-       
-    } else { 
+        var shipmentRegistry = getAssetRegistry(NS + '.Shipment')
+            .then(function (shipmentRegistry) {
+                // add the accepted state to the shipment
+                return shipmentRegistry.update(shipment);
+            });
+
+    } else {
         var factory = getFactory();
         var shipmentAcceptedError = factory.newEvent(NS, 'ShipmentAcceptedError');
         shipmentAcceptedError.shipment = shipment;
